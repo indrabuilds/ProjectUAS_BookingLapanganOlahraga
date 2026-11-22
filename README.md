@@ -2,12 +2,12 @@
 
 Aplikasi web untuk mencari lapangan olahraga dan mengajukan booking. Satu situs bisa memuat banyak venue. Pemilik venue menyetujui atau menolak pengajuan. Admin memeriksa venue baru.
 
-Dokumen lain: `docs/DEPLOY.md` untuk server sungguhan, `docs/SECURITY.md` untuk hasil audit, `docs/ROADMAP.md` untuk tahap pengerjaan.
+Lihat [panduan kontribusi](CONTRIBUTING.md), [panduan deployment](docs/DEPLOY.md), [hasil audit](docs/SECURITY.md), dan [roadmap](docs/ROADMAP.md).
 
 ## Yang perlu terpasang
 
-- PHP 8.3 atau lebih baru, plus Composer. Laravel menolak PHP yang lebih lama saat `composer install`.
-- Node.js 20 atau lebih baru, plus npm.
+- PHP 8.4.1 atau lebih baru dan Composer, sesuai versi dependency yang dikunci.
+- Node.js 22.12 atau lebih baru dan npm.
 - XAMPP dengan MariaDB yang menyala. Apache XAMPP tidak wajib, karena situs lokal memakai dua perintah di bawah.
 
 Cek cepat di terminal:
@@ -48,12 +48,12 @@ Di terminal, dari folder proyek:
 ```text
 cd backend
 composer install
-copy .env.example .env
+Copy-Item .env.example .env
 php artisan key:generate
 php artisan storage:link
 ```
 
-Di macOS atau Linux, ganti `copy` dengan `cp .env.example .env`.
+Di macOS atau Linux, ganti `Copy-Item` dengan `cp .env.example .env`.
 
 File `.env` yang baru memakai `localhost` untuk cookie login. Jangan menggantinya menjadi `127.0.0.1`. Campuran dua alamat itu membuat login gagal dengan error 419 atau 401.
 
@@ -63,15 +63,13 @@ Password database di contoh ini kosong karena XAMPP lokal sering memang begitu. 
 
 Pilih salah satu cara.
 
-**Cara A, impor file tugas (paling cepat).** Di phpMyAdmin, klik database `sportscourt`, buka tab Import, pilih `backend/database/export/sportscourt.sql`, lalu jalankan. File ini sudah berisi tabel dan data demo. Password di dalam file sudah diacak, bukan teks yang diketik.
+**Cara A, impor data demo.** Di phpMyAdmin, pilih database kosong `sportscourt`, buka tab Import, pilih `backend/database/export/sportscourt.sql`, lalu jalankan. File ini sudah berisi tabel dan data demo. Password di dalam file sudah diacak, bukan teks yang diketik.
 
-**Cara B, buat dari awal.**
+**Cara B, buat dari awal.** Jalankan dari folder `backend`.
 
 ```text
-cd backend
 php artisan migrate
 php artisan db:seed
-php artisan storage:link
 ```
 
 Kedua cara menghasilkan data yang sama. Jangan menjalankan `php artisan migrate:fresh` setelah ada booking yang ingin disimpan. Perintah itu menghapus semua tabel.
@@ -90,12 +88,12 @@ Terminal kedua, dari folder proyek:
 
 ```text
 cd frontend
-npm install
-copy .env.example .env.local
+npm ci
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Di macOS atau Linux, ganti `copy` dengan `cp .env.example .env.local`.
+Di macOS atau Linux, ganti `Copy-Item` dengan `cp .env.example .env.local`.
 
 ### 6. Buka situs
 
