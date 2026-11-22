@@ -1,37 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getApiStatus } from '@/lib/apiError'
-import type { User } from '@/types/api'
-import * as authApi from './api'
+import {
+  fetchMe,
+  login,
+  logout,
+  register,
+  updatePassword,
+  updateProfile,
+} from '@/features/auth/api'
+import { authKeys } from '@/features/auth/keys'
+import { queryClient } from '@/lib/queryClient'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
-export const authKeys = {
-  me: ['auth', 'me'] as const,
-}
-
-/**
- * Current user from the Laravel session (source of truth).
- * Resolves to `null` when not logged in (401) or when the account was suspended (403).
- */
+// Sumber kebenaran akun. 401 berarti tamu, bukan error halaman.
 export function useMe() {
-  return useQuery<User | null>({
+  return useQuery({
     queryKey: authKeys.me,
-    queryFn: async () => {
-      try {
-        return await authApi.fetchMe()
-      } catch (error) {
-        const status = getApiStatus(error)
-        if (status === 401 || status === 403) return null
-        throw error
-      }
-    },
-    staleTime: 5 * 60 * 1000,
+    queryFn: fetchMe,
     retry: false,
+    staleTime: 60_000,
   })
 }
 
 export function useLogin() {
-  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: authApi.login,
+    mutationFn: login,
     onSuccess: (user) => {
       queryClient.setQueryData(authKeys.me, user)
     },
@@ -39,9 +30,8 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: authApi.register,
+    mutationFn: register,
     onSuccess: (user) => {
       queryClient.setQueryData(authKeys.me, user)
     },
@@ -49,11 +39,9 @@ export function useRegister() {
 }
 
 export function useLogout() {
-  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: authApi.logout,
+    mutationFn: logout,
     onSettled: () => {
-      // Drop every cached private resource, then mark the visitor as guest.
       queryClient.clear()
       queryClient.setQueryData(authKeys.me, null)
     },
@@ -61,9 +49,8 @@ export function useLogout() {
 }
 
 export function useUpdateProfile() {
-  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: authApi.updateProfile,
+    mutationFn: updateProfile,
     onSuccess: (user) => {
       queryClient.setQueryData(authKeys.me, user)
     },
@@ -71,5 +58,5 @@ export function useUpdateProfile() {
 }
 
 export function useUpdatePassword() {
-  return useMutation({ mutationFn: authApi.updatePassword })
+  return useMutation({ mutationFn: updatePassword })
 }

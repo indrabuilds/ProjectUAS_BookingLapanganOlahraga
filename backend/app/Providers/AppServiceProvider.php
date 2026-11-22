@@ -53,6 +53,14 @@ class AppServiceProvider extends ServiceProvider
                 ->response($tooMany('Terlalu banyak percobaan registrasi. Silakan coba lagi nanti.'));
         });
 
+        RateLimiter::for('uploads', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('booking-create', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('password', function (Request $request) use ($tooMany) {
             return Limit::perMinute(5)
                 ->by((string) ($request->user()?->id ?: $request->ip()))

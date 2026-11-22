@@ -1,22 +1,12 @@
-import axios from 'axios'
+import { authKeys } from '@/features/auth/keys'
 import { queryClient } from '@/lib/queryClient'
-import type { ApiErrorBody } from '@/types/api'
+import axios, { type InternalAxiosRequestConfig } from 'axios'
 
-declare module 'axios' {
-  interface InternalAxiosRequestConfig {
-    /** Internal flag: request already retried once after refreshing the CSRF cookie. */
-    _csrfRetried?: boolean
-  }
-}
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-/**
- * Shared Axios client configured for Laravel Sanctum SPA cookie/CSRF flow.
- * - `withCredentials`: send the session cookie to http://localhost:8000.
- * - `withXSRFToken`: send the XSRF-TOKEN cookie as `X-XSRF-TOKEN` header cross-origin.
- * No token is ever stored in localStorage.
- */
+// Cookie session Sanctum. Token tidak disimpan di localStorage.
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL,
   withCredentials: true,
   withXSRFToken: true,
   headers: {
@@ -24,34 +14,44 @@ export const api = axios.create({
   },
 })
 
-/** Initializes (or refreshes) the XSRF-TOKEN cookie. */
-export async function ensureCsrfCookie(): Promise<void> {
-  await api.get('/sanctum/csrf-cookie')
+type RetryConfig = InternalAxiosRequestConfig & { alreadyRetriedCsrf?: boolean }
+
+let onUnauthorized: (() => void) | null = null
+
+// Dipasang dari dalam router supaya 401 bisa pindah halaman tanpa reload penuh.
+export function setUnauthorizedHandler(handler: () => void): void {
+  onUnauthorized = handler
 }
 
-// 419 = CSRF token mismatch / expired: refresh the cookie and retry exactly once.
-// 401 (outside auth endpoints) or 403 ACCOUNT_SUSPENDED: sync cached auth state to guest.
 api.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 419 && error.config && !error.config._csrfRetried) {
-      error.config._csrfRetried = true
-      await ensureCsrfCookie()
-      return api.request(error.config)
+    if (!axios.isAxiosError(error)) {
+      return Promise.reject(error)
     }
 
-    if (axios.isAxiosError<ApiErrorBody>(error) && error.response) {
-      const status = error.response.status
-      const code = error.response.data?.code
-      const url = error.config?.url ?? ''
+    const original = error.config as RetryConfig | undefined
+    const status = error.response?.status
 
-      const isAuthSelfRequest =
-        url.includes('/api/v1/auth/me') ||
-        url.includes('/api/v1/auth/login') ||
-        url.includes('/api/v1/auth/register')
+    // 419 berarti cookie CSRF basi. Ambil cookie baru, lalu coba sekali lagi.
+    if (status === 419 && original && !original.alreadyRetriedCsrf) {
+      original.alreadyRetriedCsrf = true
+      await axios.get(`${baseURL}/sanctum/csrf-cookie`, {
+        withCredentials: true,
+      })
+      return api.request(original)
+    }
 
-      if ((status === 401 && !isAuthSelfRequest) || (status === 403 && code === 'ACCOUNT_SUSPENDED')) {
-        queryClient.setQueryData(['auth', 'me'], null)
+    if (status === 401) {
+      queryClient.setQueryData(authKeys.me, null)
+      const url = original?.url ?? ''
+      const isExpectedGuestCall =
+        url.includes('/auth/me') ||
+        url.includes('/auth/login') ||
+        url.includes('/auth/register')
+
+      if (!isExpectedGuestCall) {
+        onUnauthorized?.()
       }
     }
 

@@ -25,6 +25,8 @@ class EnsureUserIsActive
                 $request->session()->regenerateToken();
             }
 
+            Auth::forgetGuards();
+
             return response()->json([
                 'message' => 'Akun Anda sedang dinonaktifkan. Hubungi admin SportsCourt.',
                 'code' => 'ACCOUNT_SUSPENDED',

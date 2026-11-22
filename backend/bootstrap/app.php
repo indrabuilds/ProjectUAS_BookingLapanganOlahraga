@@ -1,5 +1,8 @@
 <?php
 
+use App\Exceptions\BlockConflictsWithBooking;
+use App\Exceptions\BookingException;
+use App\Exceptions\InvalidVenueTransition;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
@@ -15,16 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Sanctum SPA: session + CSRF for requests from SANCTUM_STATEFUL_DOMAINS.
+        // Cookie session + CSRF untuk SPA di localhost:5173. Bukan token di localStorage.
         $middleware->statefulApi();
         $middleware->throttleApi();
-
         $middleware->alias([
             'role' => EnsureRole::class,
             'active' => EnsureUserIsActive::class,
         ]);
 
-        // API has no login page: unauthenticated API requests get JSON 401 instead of a redirect.
         $middleware->redirectGuestsTo(
             fn (Request $request) => $request->is('api/*') ? null : '/login',
         );
@@ -33,4 +34,31 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (InvalidVenueTransition $exception, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'code' => 'VENUE_INVALID_TRANSITION',
+                ], 409);
+            }
+        });
+
+        $exceptions->render(function (BookingException $exception, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'code' => $exception->errorCode,
+                ], $exception->status);
+            }
+        });
+
+        $exceptions->render(function (BlockConflictsWithBooking $exception, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'code' => 'BLOCK_CONFLICTS_WITH_BOOKING',
+                ], 409);
+            }
+        });
     })->create();

@@ -1,1 +1,95 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./assets/fonts/dmsans-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("./assets/fonts/fraunces-latin.woff2") format("woff2");
+}
+
+@theme {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --color-paper: #faf4eb;
+  --color-surface: #fffdf9;
+  --color-panel: #f2ece1;
+  --color-ink: #1a2720;
+  --color-ink-soft: #67635c;
+  --color-line: #dfd9d0;
+  --color-primary: #26543d;
+  --color-on-primary: #fffcf6;
+  --color-primary-soft: #dcefe4;
+  --color-inverse: #14432e;
+  --color-gold: #dead55;
+  --color-plum: #8b6fa0;
+  --color-open: #217b44;
+  --color-open-soft: #dcefe4;
+  --color-taken: #a83230;
+  --color-taken-soft: #f9e3e2;
+  --color-wait: #865400;
+  --color-wait-soft: #faf0dc;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-paper font-sans text-sm text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  input,
+  textarea,
+  select {
+    accent-color: var(--color-primary);
+    caret-color: var(--color-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    @apply bg-primary-soft text-ink;
+  }
+}
+
+@layer components {
+  .page-title {
+    @apply font-display text-[1.875rem]/[1.2] font-semibold tracking-[-0.015em];
+  }
+
+  .section-title {
+    @apply font-display text-[1.375rem]/[1.28] font-semibold tracking-[-0.01em];
+  }
+
+  .surface-card {
+    @apply rounded-lg border border-line bg-surface;
+  }
+
+  .status-filter {
+    @apply inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-3.5 text-xs font-semibold text-ink transition-colors duration-120 hover:bg-panel aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-on-primary;
+  }
+}

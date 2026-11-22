@@ -1,58 +1,68 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { PageLoader } from '@/components/common/PageLoader'
-import { StatusPage } from '@/components/common/StatusPage'
-import { Button } from '@/components/common/Button'
+import { LoadErrorScreen, LoadingScreen } from '@/components/layout/ScreenState'
 import { useMe } from '@/features/auth/hooks'
-import { homeRouteFor } from '@/lib/routes'
-import type { UserRole } from '@/types/api'
+import { homePathForRole } from '@/features/auth/paths'
+import type { UserRole } from '@/types/user'
+import type { ReactNode } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 
-/*
- * Route guards are a UX convenience only. Every protected endpoint is enforced
- * again by the Laravel backend (auth:sanctum + role middleware + policies).
- */
-
-function SessionError({ onRetry }: { onRetry: () => void }) {
-  return (
-    <StatusPage
-      code="Error"
-      title="Gagal memuat sesi"
-      description="Tidak dapat memeriksa status login. Pastikan server API berjalan, lalu coba lagi."
-      action={<Button onClick={onRetry}>Coba Lagi</Button>}
-    />
-  )
-}
-
-export function RequireAuth({ roles }: { roles?: readonly UserRole[] }) {
-  const { data: user, isPending, isError, refetch } = useMe()
+// Guard ini hanya untuk tampilan. API tetap menolak request yang tidak berhak.
+export function RequireAuth({ children }: { children: ReactNode }) {
+  const me = useMe()
   const location = useLocation()
 
-  if (isPending) return <PageLoader label="Memeriksa sesi..." />
-  if (isError) return <SessionError onRetry={() => void refetch()} />
-
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />
+  if (me.isPending) {
+    return <LoadingScreen />
   }
 
-  if (roles && !roles.includes(user.role)) {
-    return (
-      <StatusPage
-        code="403"
-        title="Akses ditolak"
-        description="Akun Anda tidak memiliki izin untuk membuka halaman ini."
-      />
-    )
+  if (me.isError) {
+    return <LoadErrorScreen onRetry={() => void me.refetch()} />
   }
 
-  return <Outlet />
+  if (!me.data) {
+    const from = location.pathname.startsWith('/bookings/')
+      ? `${location.pathname}${location.search}`
+      : location.pathname
+
+    return <Navigate to="/login" replace state={{ from }} />
+  }
+
+  return children
 }
 
-/** Login/register pages: logged-in users are sent to their dashboard. */
-export function GuestOnly() {
-  const { data: user, isPending, isError, refetch } = useMe()
+export function RequireRole({
+  role,
+  children,
+}: {
+  role: UserRole
+  children: ReactNode
+}) {
+  const me = useMe()
 
-  if (isPending) return <PageLoader label="Memeriksa sesi..." />
-  if (isError) return <SessionError onRetry={() => void refetch()} />
-  if (user) return <Navigate to={homeRouteFor(user.role)} replace />
+  if (!me.data) {
+    return <Navigate to="/login" replace />
+  }
 
-  return <Outlet />
+  if (me.data.role !== role) {
+    return <Navigate to="/forbidden" replace />
+  }
+
+  return children
+}
+
+export function GuestOnly({ children }: { children: ReactNode }) {
+  const me = useMe()
+
+  if (me.isPending) {
+    return <LoadingScreen />
+  }
+
+  if (me.isError) {
+    return <LoadErrorScreen onRetry={() => void me.refetch()} />
+  }
+
+  if (me.data) {
+    return <Navigate to={homePathForRole(me.data.role)} replace />
+  }
+
+  return children
 }

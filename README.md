@@ -1,71 +1,159 @@
 # SportsCourt
 
-Marketplace pemesanan lapangan olahraga multi-venue berbasis web (MVP v1.0).
+Aplikasi web untuk mencari lapangan olahraga dan mengajukan booking. Satu situs bisa memuat banyak venue. Pemilik venue menyetujui atau menolak pengajuan. Admin memeriksa venue baru.
 
-## Struktur Monorepo
+Dokumen lain: `docs/DEPLOY.md` untuk server sungguhan, `docs/SECURITY.md` untuk hasil audit, `docs/ROADMAP.md` untuk tahap pengerjaan.
+
+## Yang perlu terpasang
+
+- PHP 8.3 atau lebih baru, plus Composer. Laravel menolak PHP yang lebih lama saat `composer install`.
+- Node.js 20 atau lebih baru, plus npm.
+- XAMPP dengan MariaDB yang menyala. Apache XAMPP tidak wajib, karena situs lokal memakai dua perintah di bawah.
+
+Cek cepat di terminal:
 
 ```text
-ProjectUAS/
-├── frontend/   # React 19 + TypeScript + Vite 8 + Tailwind CSS v4
-├── backend/    # Laravel 13 REST API (/api/v1) + MariaDB (InnoDB)
-├── docs/       # DECISIONS, ERD, ARCHITECTURE, API, ROADMAP
-├── prd.md      # Product Requirements Document & Master Prompt
-└── AGENTS.md   # Aturan engineering & verifikasi workspace
+php -v
+composer -V
+node -v
+npm -v
 ```
 
-## Runtime Lokal Terverifikasi
+## Dari folder kosong sampai situs terbuka
 
-- **PHP:** 8.5.0 (Herd Lite) — ekstensi aktif termasuk `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`, `bcmath`
-- **Backend:** Laravel Framework 13.43.0
-- **Composer:** 2.8.12
-- **Node.js / npm:** v22.20.0 / 11.6.2
-- **Frontend:** React 19.3.1, TypeScript ~7.0.2, Vite 8.3.6, Tailwind CSS 4.3.5
-- **Database:** XAMPP MariaDB 10.4.32 (engine `InnoDB`, charset `utf8mb4_unicode_ci`)
+### 1. Ambil kodenya
 
-## Setup & Menjalankan Lokal
+Clone repositori ini, lalu masuk ke foldernya.
 
-### 1. Database (XAMPP MariaDB)
-Pastikan service MariaDB/MySQL XAMPP berjalan di `127.0.0.1:3306`, lalu buat database `sportscourt` dan `sportscourt_test`:
+### 2. Nyalakan database
+
+Buka XAMPP Control Panel dan start MySQL. Biarkan MySQL menyala selama kalian mencoba situs.
+
+Buka phpMyAdmin (`http://localhost/phpmyadmin`). Buat dua database, keduanya collation `utf8mb4_unicode_ci`:
+
+- `sportscourt` untuk dipakai sehari-hari
+- `sportscourt_test` untuk tes otomatis
+
+Kalau lebih nyaman lewat tab SQL:
+
 ```sql
 CREATE DATABASE IF NOT EXISTS sportscourt CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS sportscourt_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 2. Backend (`backend/`)
-```powershell
+### 3. Siapkan backend
+
+Di terminal, dari folder proyek:
+
+```text
 cd backend
 composer install
-Copy-Item .env.example .env
+copy .env.example .env
 php artisan key:generate
+php artisan storage:link
+```
+
+Di macOS atau Linux, ganti `copy` dengan `cp .env.example .env`.
+
+File `.env` yang baru memakai `localhost` untuk cookie login. Jangan menggantinya menjadi `127.0.0.1`. Campuran dua alamat itu membuat login gagal dengan error 419 atau 401.
+
+Password database di contoh ini kosong karena XAMPP lokal sering memang begitu. Jangan memakai pengaturan itu di server sungguhan.
+
+### 4. Isi database
+
+Pilih salah satu cara.
+
+**Cara A, impor file tugas (paling cepat).** Di phpMyAdmin, klik database `sportscourt`, buka tab Import, pilih `backend/database/export/sportscourt.sql`, lalu jalankan. File ini sudah berisi tabel dan data demo. Password di dalam file sudah diacak, bukan teks yang diketik.
+
+**Cara B, buat dari awal.**
+
+```text
+cd backend
 php artisan migrate
+php artisan db:seed
+php artisan storage:link
+```
+
+Kedua cara menghasilkan data yang sama. Jangan menjalankan `php artisan migrate:fresh` setelah ada booking yang ingin disimpan. Perintah itu menghapus semua tabel.
+
+File SQL dibuat di MariaDB 10.11.14 dengan `php artisan migrate:fresh --seed` pada database kosong, lalu `mysqldump`. Langkah lengkap dan cara impor ada di `docs/DEPLOY.md`.
+
+Jalankan API dari folder `backend` dan biarkan terminalnya terbuka.
+
+```sh
 php artisan serve --host=localhost --port=8000
 ```
-API tersedia di `http://localhost:8000/api/v1` (cek kesehatan: `GET /api/v1/health`).
 
-### 3. Frontend (`frontend/`)
-```powershell
+### 5. Siapkan halaman
+
+Terminal kedua, dari folder proyek:
+
+```text
 cd frontend
 npm install
-Copy-Item .env.example .env.local
+copy .env.example .env.local
 npm run dev
 ```
-Aplikasi tersedia di `http://localhost:5173` (wajib memakai `localhost`, jangan dicampur dengan `127.0.0.1`).
 
-## Testing & Verifikasi
+Di macOS atau Linux, ganti `copy` dengan `cp .env.example .env.local`.
 
-```powershell
-# Backend (menggunakan database sportscourt_test pada MariaDB InnoDB)
+### 6. Buka situs
+
+Buka `http://localhost:5173`. API ada di `http://localhost:8000`. Keduanya harus tetap `localhost`, bukan `127.0.0.1`.
+
+Biarkan kedua terminal tetap berjalan. Kalau terminal backend ditutup, halaman tidak bisa menyimpan data.
+
+Agar booking yang melewati batas waktu berubah status sendiri, buka terminal ketiga:
+
+```text
+cd backend
+php artisan schedule:work
+```
+
+Tanpa itu, status tidak berubah otomatis. Lapangan yang batas waktunya sudah lewat tetap tidak bisa dipesan dua kali.
+
+## Akun demo
+
+Password keempat akun ini sama: `Rahasia12`.
+
+| Email | Dipakai untuk |
+| --- | --- |
+| andi@demo.test | Pelanggan, sudah punya booking |
+| bima@demo.test | Pelanggan kedua |
+| sari@demo.test | Pemilik GOR Demo Sehat dan GOR Demo Baru |
+| raka@demo.test | Pemilik venue yang ditolak dan yang ditangguhkan |
+
+Tidak ada admin di data demo. Admin tidak bisa mendaftar dari halaman. Buat dari terminal backend:
+
+```text
+cd backend
+php artisan app:create-admin
+```
+
+Perintah ini meminta nama, email, dan konfirmasi password. Password admin minimal 12 karakter dan mengandung huruf besar, huruf kecil, angka, serta simbol. Password dimasukkan lewat prompt tersembunyi.
+
+## Cek bahwa semuanya sehat
+
+```text
 cd backend
 php artisan test
 
-# Frontend
 cd frontend
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-## Catatan Keamanan
+`php artisan test` memakai database `sportscourt_test`, bukan data demo.
 
-- **Jangan pernah commit file `.env` atau `.env.local`** ke repository.
-- Konfigurasi `root` tanpa password pada `.env.example` **hanya untuk development lokal XAMPP**. Untuk production, wajib gunakan user database terpisah dengan password kuat, `APP_DEBUG=false`, HTTPS, dan secure session cookie.
+## Server sungguhan
+
+Jangan menyalin `.env` lokal ke server. Contoh yang memakai HTTPS, `APP_DEBUG=false`, cookie aman, dan domain Sanctum ada di:
+
+- `backend/.env.production.example`
+- `frontend/.env.production.example`
+- `docs/DEPLOY.md` (langkah naik server, cadangan database, dan cara kembali jika rilis rusak)
+
+## Yang tidak boleh masuk Git
+
+Jangan commit `.env`, `.env.local`, atau `.env.production`. File itu berisi kunci aplikasi dan password database. Yang boleh di-commit hanya file contoh yang berakhiran `.example`.
