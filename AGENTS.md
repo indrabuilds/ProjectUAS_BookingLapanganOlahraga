@@ -1,9 +1,9 @@
-# Panduan Kontribusi SportsCourt
+# AGENTS.md — SportsCourt Workspace Rules
 
-Gunakan [README](README.md) untuk menyiapkan aplikasi di komputer lokal. Panduan ini mencatat aturan proyek dan pemeriksaan sebelum perubahan direview.
+Dokumen ini menjadi panduan wajib saat bekerja di repository `ProjectUAS` (SportsCourt).
 
 ## Referensi Utama
-- [prd.md](./prd.md) — Kebutuhan produk dan panduan implementasi
+- [prd.md](./prd.md) — Product Requirements & Master Prompt
 - [docs/DECISIONS.md](./docs/DECISIONS.md) — Keputusan produk dan teknis (D-01–D-08, P-01–P-15)
 - [docs/ERD.md](./docs/ERD.md) — Desain skema database & state machine
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Arsitektur backend/frontend, Sanctum SPA, locking concurrency

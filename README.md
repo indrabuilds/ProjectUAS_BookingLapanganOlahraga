@@ -9,8 +9,8 @@ ProjectUAS/
 ├── frontend/   # React 19 + TypeScript + Vite 8 + Tailwind CSS v4
 ├── backend/    # Laravel 13 REST API (/api/v1) + MariaDB (InnoDB)
 ├── docs/       # DECISIONS, ERD, ARCHITECTURE, API, ROADMAP
-├── prd.md      # Product Requirements Document
-└── CONTRIBUTING.md   # Panduan kontribusi dan verifikasi
+├── prd.md      # Product Requirements Document & Master Prompt
+└── AGENTS.md   # Aturan engineering & verifikasi workspace
 ```
 
 ## Runtime Lokal Terverifikasi
